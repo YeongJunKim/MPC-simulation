@@ -1,84 +1,182 @@
 % Skeleton code for new MPC design
 % Purpose: Achieve target position (or formation) while maintaining containment
 % Based on this code, let's practice and develop our method.
-
+clear all
+clf
 %% Initialization
+global app
+
+app.agent_num = 4;
+app.leader_num = 3;
+
+app.follower_num = app.agent_num - app.leader_num;
+app.specise = zeros(app.agent_num, app.agent_num);
+
+app.states = zeros(2, app.agent_num);
+app.states(:,1) = [0.0 0.0]';
+app.states(:,2) = [1.0 0.0]';
+app.states(:,3) = [0.5 1.0]';
+
+app.states(:,4) = [0.0 1.0]';
+
+app.states_ref = zeros(2, app.leader_num);
+app.states_ref(:,1) = [2.0 2.0]';
+app.states_ref(:,2) = [3.0 2.0]';
+app.states_ref(:,3) = [2.5 3.0]';
+
+app.control_input = zeros(2, app.agent_num);
+
 % Parameters
-dt = 0.1;                   % sampling time (unit: second)
+app.dt = 0.1;                   % sampling time (unit: second)
 
-% State of robots
-% Here, we consider position values as state, but it will be pose (position + heading angle) later.
-% The number of leaders and followers can be increased later.
-state_L1 = [0.0 0.0]';      % state of leader 1 (unit: meter)
-state_L2 = [1.0 0.0]';      % state of leader 2
-state_L3 = [0.5 1.0]';      % state of leader 3
-state_F1 = [0.0 1.0]';      % state of follower 1, initially it is outside of the convex hull.
-
-% Target State of robots
-% Here, we consider that target positions for leader robots are known.
-% If we assume that other values are given to leader robots (e.g. distance between leaders), the variables below would be changed.
-state_ref_L1 = [2.0 2.0]';
-state_ref_L2 = [3.0 2.0]';
-state_ref_L3 = [2.5 3.0]';
-
-% Measurements for robots
-% Here, we consider x and y displacement between each leader and follower as measurements.
-delta_F1_L1 = state_F1 - state_L1;
-delta_F1_L2 = state_F1 - state_L2;
-delta_F1_L3 = state_F1 - state_L3;
-
-% Control input for robots
-% Here, we consider x and y velocities as control input, but it can be linear and angular velocities later.
-ctrl_L1 = [0.0 0.0]';       % control input for leader 1 (unit: meter/second)
-ctrl_L2 = [0.0 0.0]';       % control input for leader 2
-ctrl_L3 = [0.0 0.0]';       % control input for leader 3
-ctrl_F1 = [0.0 0.0]';       % control input for follower 1
 
 %% Plotting initialization
-figure();
+figure(1);
 ax = axes;
-robot_L1 = plot(ax, state_L1(1), state_L1(2), 'ro'); hold on; grid on;
-robot_L2 = plot(ax, state_L2(1), state_L2(2), 'ro');
-robot_L3 = plot(ax, state_L3(1), state_L3(2), 'ro');
-robot_F1 = plot(ax, state_F1(1), state_F1(2), 'bo');
-robot_target_L1 = plot(ax, state_ref_L1(1), state_ref_L1(2), 'r*');
-robot_target_L2 = plot(ax, state_ref_L2(1), state_ref_L2(2), 'r*');
-robot_target_L3 = plot(ax, state_ref_L3(1), state_ref_L3(2), 'r*');
+
+app.plot_p = cell(1, app.agent_num);
+app.plot_t = cell(1, app.leader_num);
+
+
+for i = 1:app.agent_num
+    app.plot_p{i} = plot(ax, app.states(1,i), app.states(2,i), 'ro'); hold on; grid on;
+end
+for i = 1:app.leader_num
+    app.plot_t{i} = plot(ax, app.states_ref(1,i), app.states_ref(2,i), 'r*');
+end
+
+p = zeros(app.leader_num, 2);
+for j = 1:app.leader_num
+    p(j,:) = app.states(:,j);
+end
+[k, av] = convhull(p);
+convex_hull = plot(ax, p(k,1),p(k,2));
+
 xlim([-1.0 4.0]); ylim([-1.0 4.0]);
 xlabel('X (m)'); ylabel('Y (m)');
-legend([robot_L1 robot_F1 robot_target_L1], {'Leaders', 'Follower', 'Target'});
+legend([app.plot_p{1}  app.plot_p{4} app.plot_t{1}], {'Leaders', 'Follower', 'Target'});
 title('Containment MPC');
 
 %% Simulation
-num_iteration = 100;        % the number of iteration. You may change this value.
-for i = 1:num_iteration
-    % Measurements
-    delta_F1_L1 = state_F1 - state_L1;
-    delta_F1_L2 = state_F1 - state_L2;
-    delta_F1_L3 = state_F1 - state_L3;
+i = 0;
+while(1)
+    i = i + 1;
+    % Check converge
+    diff = zeros(2, app.leader_num);
+    diff_norm = zeros(1, app.leader_num);
+    for j = 1:app.leader_num
+        diff(:, j) = app.states(:,j) - app.states_ref(:,j);
+        diff_norm(j) = norm(diff(:,j));
+    end
+    if mean(diff_norm) < 0.05
+        break;
+    end
     
-    % Design controller (ctrl_L1 ~ L3 and F1)
-    % Just freely design your controller first.
-    % We will decide a method to be implemented precisely later.
-%     ctrl_L1 = 
-%     ctrl_L2 = 
-%     ctrl_L3 = 
-%     ctrl_F1 = 
+    % We need to check leader's shape is convex?
+    
+    
+    % We need to check if all follower are in convex hull.
+    p = zeros(app.leader_num, 2);
+    for j = 1:app.leader_num
+        p(j,:) = app.states(:,j);
+    end
+    
+    [kk, av] = convhull(p);
+    
+    k = convhulln(p);
+    check = 1;
+    for j = 1:app.follower_num
+        in = inhull(app.states(:,app.leader_num + j)', p, k);
+        if(in == 0)
+            fprintf("follower %d is not in convex hull. \n", j);
+            check = 0;
+        end
+    end
+    if(in ~= 0)
+        fprintf("All followers are in convex hull. \n", j);
+    end
+    
+    
+    
+    % control
+    app.control_input(:,:) = 0;
+    if(check == 1)
+        % In convex
+        app.control_input(:,:) = 0;
+        s = size(kk,1) - 1;
+        sum = 0;
+        for j = 1:s
+            sum = sum + app.states(:,kk(j));
+        end
+        sum = sum / s;
+        for j = 1:app.leader_num
+            app.control_input(:,j) = (app.states_ref(:,j) - app.states(:,j)) * 0.1;
+        end
+        
+        for j = 1:app.follower_num
+            diff = zeros(2,app.leader_num);
+            distance = zeros(1,app.leader_num);
+            for k = 1:app.leader_num
+                diff(:,k) = app.states(:,k) - app.states(:,app.leader_num + j);
+                distance(k) = norm(diff);
+            end
+            
+            distance_n = normalize(distance, 'norm', 1);
+            
+            for k = 1:app.leader_num
+                app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) + diff(:,k) * distance_n(k);
+            end
+        end
+    else
+        % Not in convex
+        % Should do goal in the convex hull for every followers
+        app.control_input(:,:) = 0;
+        s = size(kk,1) - 1;
+        sum = 0;
+        for j = 1:s
+            sum = sum + app.states(:,kk(j));
+        end
+        sum = sum / s;
+        for j = 1:app.leader_num
+            app.control_input(:,j) = (app.states_ref(:,j) - app.states(:,j)) * 0.1;
+        end
+        
+        for j = 1:app.follower_num
+            diff = zeros(2,app.leader_num);
+            distance = zeros(1,app.leader_num);
+            for k = 1:app.leader_num
+                diff(:,k) = app.states(:,k) - app.states(:,app.leader_num + j);
+                distance(k) = norm(diff);
+            end
+            
+            distance_n = normalize(distance, 'norm', 1);
+            
+            for k = 1:app.leader_num
+                app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) + diff(:,k) * distance_n(k);
+            end
+        end
+    end
+    
+    
     
     % Update state
-    state_L1 = update_state(state_L1, ctrl_L1, dt);
-    state_L2 = update_state(state_L2, ctrl_L2, dt);
-    state_L3 = update_state(state_L3, ctrl_L3, dt);
-    state_F1 = update_state(state_F1, ctrl_F1, dt);
+    for j = 1:app.agent_num
+        app.states(:,j) = update_state(app.states(:,j), app.control_input(:,j), app.dt);
+    end
+    
+    
     
     % Update plot
-    robot_L1.XData = state_L1(1); robot_L1.YData = state_L1(2);
-    robot_L2.XData = state_L2(1); robot_L2.YData = state_L2(2);
-    robot_L3.XData = state_L3(1); robot_L3.YData = state_L3(2);
-    robot_F1.XData = state_F1(1); robot_F1.YData = state_F1(2);
+    for j = 1:app.agent_num
+        app.plot_p{j}.XData = app.states(1,j);
+        app.plot_p{j}.YData = app.states(2,j);
+    end
+    % draw convel hull
+    convex_hull.XData = p(kk,1); convex_hull.YData = p(kk,2);
     drawnow;
 end
 
 function output = update_state(state, ctrl, sampling_time)
-    output = state + ctrl * sampling_time;
+output = state + ctrl * sampling_time;
 end
+
