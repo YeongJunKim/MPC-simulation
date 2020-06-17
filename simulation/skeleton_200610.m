@@ -6,28 +6,32 @@ clf
 %% Initialization
 global app
 
-app.agent_num = 4;
+app.agent_num = 10;
 app.leader_num = 3;
-
 app.follower_num = app.agent_num - app.leader_num;
-app.specise = zeros(app.agent_num, app.agent_num);
 
 app.states = zeros(2, app.agent_num);
 app.states(:,1) = [0.0 0.0]';
 app.states(:,2) = [1.0 0.0]';
 app.states(:,3) = [0.5 1.0]';
-
 app.states(:,4) = [0.0 1.0]';
+app.states(:,5) = [0.0 1.5]';
+app.states(:,6) = [0.5 -1.5]';
+app.states(:,7) = [2 2]';
+app.states(:,8) = [5 1]';
+app.states(:,9) = [2.4 1]';
+app.states(:,10) = [1 -3]';
+
 
 app.states_ref = zeros(2, app.leader_num);
 app.states_ref(:,1) = [2.0 2.0]';
-app.states_ref(:,2) = [3.0 2.0]';
-app.states_ref(:,3) = [2.5 3.0]';
+app.states_ref(:,2) = [5.0 2.0]';
+app.states_ref(:,3) = [2.5 5.0]';
 
 app.control_input = zeros(2, app.agent_num);
 
 % Parameters
-app.dt = 0.1;                   % sampling time (unit: second)
+app.dt = 0.05;                   % sampling time (unit: second)
 
 
 %% Plotting initialization
@@ -52,7 +56,7 @@ end
 [k, av] = convhull(p);
 convex_hull = plot(ax, p(k,1),p(k,2));
 
-xlim([-1.0 4.0]); ylim([-1.0 4.0]);
+xlim([-2.0 5.0]); ylim([-2.0 5.0]);
 xlabel('X (m)'); ylabel('Y (m)');
 legend([app.plot_p{1}  app.plot_p{4} app.plot_t{1}], {'Leaders', 'Follower', 'Target'});
 title('Containment MPC');
@@ -123,8 +127,28 @@ while(1)
             
             distance_n = normalize(distance, 'norm', 1);
             
-            for k = 1:app.leader_num
-                app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) + diff(:,k) * distance_n(k);
+            for k = 1:app.leader_num    
+                app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) + diff(:,k) * distance_n(k)* 1.2;
+                app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) - diff(:,k) * (1 -distance_n(k)) * 0.01;
+            end
+            
+            diff = zeros(2, app.follower_num);
+            distance = zeros(1, app.follower_num);
+            for k = 1:app.follower_num
+                diff(:,k) = app.states(:,app.leader_num + k) - app.states(:,app.leader_num + j);
+                distance(k) = norm(diff(:,k));
+            end
+            
+            distance_n = normalize(distance, 'norm' , 1);
+            distance_n = 1 - distance_n;
+            
+            
+            
+            for k = 1:app.follower_num
+                if k == j
+                    continue;
+                end
+                app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) - diff(:,k)/norm(diff(:,k)) *  distance_n(k) * 0.1;
             end
         end
     else
@@ -138,7 +162,7 @@ while(1)
         end
         sum = sum / s;
         for j = 1:app.leader_num
-            app.control_input(:,j) = (app.states_ref(:,j) - app.states(:,j)) * 0.1;
+            app.control_input(:,j) = (app.states_ref(:,j) - app.states(:,j)) * 0.01;
         end
         
         for j = 1:app.follower_num
@@ -146,17 +170,46 @@ while(1)
             distance = zeros(1,app.leader_num);
             for k = 1:app.leader_num
                 diff(:,k) = app.states(:,k) - app.states(:,app.leader_num + j);
-                distance(k) = norm(diff);
+                distance(k) = norm(diff(:,k));
             end
             
             distance_n = normalize(distance, 'norm', 1);
             
             for k = 1:app.leader_num
-                app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) + diff(:,k) * distance_n(k);
+                app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) + diff(:,k) * distance_n(k) * 1.2;
+                app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) - diff(:,k) * (1 -distance_n(k)) * 0.01;
             end
+            
+            diff = zeros(2, app.follower_num);
+            distance = zeros(1, app.follower_num);
+            for k = 1:app.follower_num
+                diff(:,k) = app.states(:,app.leader_num + k) - app.states(:,app.leader_num + j);
+                distance(k) = norm(diff);
+            end
+            
+            distance_n = normalize(distance, 'norm' , 1);
+            distance_n = 1 - distance_n;
+            
+            for k = 1:app.follower_num
+                if k == j
+                    continue;
+                end
+                app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) - diff(:,k)/norm(diff(:,k)) *  distance_n(k) * 0.1;
+            end
+            
         end
     end
     
+    
+    
+    % Check hardware constraint
+    for j = 1:app.agent_num
+       if(app.control_input(:,j) > 0.1)
+           app.control_input(:,j) = 0.1;
+       elseif app.control_input(:,j) < -0.1
+          app.control_input(:,j) = -0.1; 
+       end
+    end
     
     
     % Update state
