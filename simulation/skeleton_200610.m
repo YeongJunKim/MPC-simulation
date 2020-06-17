@@ -7,7 +7,7 @@ clf
 global app
 
 app.agent_num = 10;
-app.leader_num = 3;
+app.leader_num = 4;
 app.follower_num = app.agent_num - app.leader_num;
 
 app.states = zeros(2, app.agent_num);
@@ -26,7 +26,8 @@ app.states(:,10) = [1 -3]';
 app.states_ref = zeros(2, app.leader_num);
 app.states_ref(:,1) = [2.0 2.0]';
 app.states_ref(:,2) = [5.0 2.0]';
-app.states_ref(:,3) = [2.5 5.0]';
+app.states_ref(:,3) = [5.0 5.0]';
+app.states_ref(:,4) = [2.5 5.0]';
 
 app.control_input = zeros(2, app.agent_num);
 
@@ -204,10 +205,15 @@ while(1)
     
     % Check hardware constraint
     for j = 1:app.agent_num
-       if(app.control_input(:,j) > 0.1)
-           app.control_input(:,j) = 0.1;
-       elseif app.control_input(:,j) < -0.1
-          app.control_input(:,j) = -0.1; 
+       if(app.control_input(1,j) > 0.15)
+           app.control_input(1,j) = 0.15;
+       elseif app.control_input(1,j) < -0.15
+          app.control_input(1,j) = -0.15; 
+       end
+       if(app.control_input(2,j) > 0.15)
+           app.control_input(2,j) = 0.15;
+       elseif app.control_input(2,j) < -0.15
+          app.control_input(2,j) = -0.15; 
        end
     end
     
