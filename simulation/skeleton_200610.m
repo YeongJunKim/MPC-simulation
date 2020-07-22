@@ -3,6 +3,8 @@
 % Based on this code, let's practice and develop our method.
 clear all
 clf
+
+addpath('./../utils');
 %% Initialization
 global app
 
@@ -130,7 +132,7 @@ while(1)
             
             for k = 1:app.leader_num    
                 app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) + diff(:,k) * distance_n(k)* 1.2;
-                app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) - diff(:,k) * (1 -distance_n(k)) * 0.01;
+                app.control_input(:,app.leader_num + j) = app.control_input(:,app.leader_num + j) - diff(:,k) * (1 - distance_n(k)) * 0.01;
             end
             
             diff = zeros(2, app.follower_num);

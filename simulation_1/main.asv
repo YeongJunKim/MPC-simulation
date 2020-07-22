@@ -82,17 +82,9 @@ title('Containment MPC');
 
 %% app.mpc settting
 mpc_initialization();
-xk = zeros(3,app.agent_num);
-uk = zeros(2,app.agent_num);
 for i = 1:app.agent_num
-   xk(:,i) = app.mpc.agent(i).data.x0;
-   uk(:,i) = app.mpc.agent(i).data.u0;
-end
-for ct = 1:50
-    for i = 1:app.agent_num
-       uk(:,i) = mpc_run(i,xk(:,i), uk(:,i),app.states_ref(:,i)'); 
-       xk(:,i) = dynamics(xk(:,i),uk(:,i));
-    end
+   mv = mpc_run(i,app.mpc.agent(i).data.x0', app.mpc.agent(i).data.u0',app.states_ref(:,i)'); 
+%     fprintf("\n%d : mv = %f\n",i,mv);
 end
 %% Simulation
 i = 0;
@@ -205,12 +197,7 @@ end
 
 
 
-function r = dynamics(x, u)
-r = zeros(3,1);
-r(1) = x(1) + u(1) * cos(x(3)) * 0.1;
-r(2) = x(2) + u(1) * sin(x(3)) * 0.1;
-r(3) = x(3) + u(2) * 0.1;
-end
+
 
 
 
