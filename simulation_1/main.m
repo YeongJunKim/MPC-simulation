@@ -82,16 +82,26 @@ title('Containment MPC');
 
 %% app.mpc settting
 mpc_initialization();
-xk = zeros(3,app.agent_num);
-uk = zeros(2,app.agent_num);
+xk = zeros(6,app.agent_num);
+uk = zeros(4,app.agent_num);
+xHistory = zeros(6,app.agent_num,50);
+uHistory = zeros(4,app.agent_num,50);
+lastMV = zeros(4,app.agent_num);
 for i = 1:app.agent_num
    xk(:,i) = app.mpc.agent(i).data.x0;
    uk(:,i) = app.mpc.agent(i).data.u0;
 end
 for ct = 1:50
     for i = 1:app.agent_num
-       uk(:,i) = mpc_run(i,xk(:,i), uk(:,i),app.states_ref(:,i)'); 
-       xk(:,i) = dynamics(xk(:,i),uk(:,i));
+        uk(:,i) = mpc_run(i,xk(:,i), lastMV(:,i),[0 0 0 0 0 0]);
+        predict(app.mpc.agent(i).data.EKF, uk(:,i), 0.1);
+        uHistory(:,i,ct) = uk(:,i);
+        lastMV(:,i) = uk(:,i);
+        ODEFUN = @(t,xk) FlyingRobotStateFcn(xk,uk);
+        [TOUT,YOUT] = ode45(ODEFUN,[0 0.1], xHistory(:,i,ct)');
+
+        xHistory(:,i,ct+1) = YOUT(end,:);     
+        
     end
 end
 %% Simulation
