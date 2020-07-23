@@ -32,7 +32,7 @@ app.states_ref = zeros(6, app.agent_num);
 app.states_ref(:,1) = [0.0 0.0 pi 0 0 0]';
 app.states_ref(:,2) = [5.0 0.0 pi/2 0 0 0]';
 app.states_ref(:,3) = [5.0 5.0 0 0 0 0]';
-app.states_ref(:,4) = [2.5 5.0 pi/3 0 0 0]';
+app.states_ref(:,4) = [0 7.0 pi/3 0 0 0]';
 app.states_ref(:,5) = [2 1.5 0 0 0 0]';
 app.states_ref(:,6) = [0.5 -1.5 0 0 0 0]';
 app.states_ref(:,7) = [-1 5 0 0 0 0]';
@@ -43,6 +43,20 @@ p = zeros(app.leader_num,2);
     end
 for i = 1:app.follower_num
     app.states_ref(1:2,app.leader_num+i) = inhull_random_point(p,1);
+end
+
+app.states_ref_arr = zeros(6, app.agent_num, 3);
+app.states_ref_arr(:,:,1) = app.states_ref(:,:);
+app.states_ref_arr(1:2,1,2) = [-3 -3];
+app.states_ref_arr(1:2,2,2) = [2 -3];
+app.states_ref_arr(1:2,3,2) = [2 2];
+app.states_ref_arr(1:2,4,2) = [-3 9];
+p = zeros(app.leader_num,2);
+    for j = 1:app.leader_num
+        p(j,:) =app.states_ref_arr(1:2,j,2);
+    end
+for i = 1:app.follower_num
+    app.states_ref_arr(1:2,app.leader_num+i) = inhull_random_point(p,1);
 end
 
 
@@ -79,9 +93,9 @@ end
 for i = 1:app.leader_num
     app.plot_t{i} = plot(ax, app.states_ref(1,i), app.states_ref(2,i), 'r*');
 end
-for i = 1:app.follower_num
-    app.plot_ft{i} = plot(ax, app.states_ref(1, app.leader_num+i), app.states_ref(2,app.leader_num+i), 'b+');
-end
+% for i = 1:app.follower_num
+%     app.plot_ft{i} = plot(ax, app.states_ref(1, app.leader_num+i), app.states_ref(2,app.leader_num+i), 'b+');
+% end
 
 p = zeros(app.leader_num, 2);
 for j = 1:app.leader_num
@@ -90,7 +104,7 @@ end
 [k, av] = convhull(p);
 convex_hull = plot(ax, p(k,1),p(k,2));
 
-xlim([-11.0 7.0]); ylim([-11.0 7.0]);
+xlim([-11.0 9.0]); ylim([-11.0 9.0]);
 xlabel('X (m)'); ylabel('Y (m)');
 legend([app.plot_p{1}  app.plot_p{4} app.plot_t{1}], {'Leaders', 'Follower', 'Target'});
 title('Containment MPC');
@@ -174,7 +188,17 @@ for k = 1:app.simulation_step+2
         for i = 1:app.follower_num
             app.states_ref(1:2,app.leader_num+i) = inhull_random_point(p,1);
         end
+    elseif(app.mode == MODE_GO_FOLLOW)
+        p = zeros(app.leader_num,2);
+        for j = 1:app.leader_num
+           p(j,:) = app.states_ref(1:2,j);  
+        end
+        for j = 1:app.follower_num
+           app.states_ref(1:2,app.leader_num+j) = inhull_random_point(p,1);
+        end
+        
     end
+    
     
     for ct = 1:app.agent_num
         yk = app.mpc.agent(ct).data.xHistory(k,1:3)' + randn*0.01;
@@ -200,19 +224,25 @@ for k = 1:app.simulation_step+2
         app.plot_p{j}.XData = app.states(1,j);
         app.plot_p{j}.YData = app.states(2,j);
     end
-    for j = 1:app.leader_num
-        app.plot_t{j}.XData = app.states_ref(1,j); 
-        app.plot_t{j}.YData = app.states_ref(2,j); 
-    end
-    for j = 1:app.follower_num
-        app.plot_ft{j}.XData = app.states_ref(1,app.leader_num+j);
-        app.plot_ft{j}.XData = app.states_ref(2,app.leader_num+j);
-    end
+%     for j = 1:app.leader_num
+%         app.plot_t{j}.XData = app.states_ref(1,j); 
+%         app.plot_t{j}.YData = app.states_ref(2,j); 
+%     end
+%     for j = 1:app.follower_num
+%         app.plot_ft{j}.XData = app.states_ref(1,app.leader_num+j);
+%         app.plot_ft{j}.XData = app.states_ref(2,app.leader_num+j);
+%     end
     % draw convel hull
+    p = zeros(app.leader_num,2);
+    for j = 1:app.leader_num
+        p(j,:) =app.states(1:2,j);
+    end
+    [kk, av] = convhull(p);
     convex_hull.XData = p(kk,1); convex_hull.YData = p(kk,2);
     drawnow;
     
     waitbar(k/(app.simulation_step+2), hbar);
+    
 end
 close(hbar)
 %% result

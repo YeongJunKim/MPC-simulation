@@ -70,7 +70,7 @@ for ct = 1:app.agent_num
     % input constraint
     for i = 1:app.nu
         app.mpc.agent(ct).data.nlobj_trackin.MV(i).Min = 0;
-        app.mpc.agent(ct).data.nlobj_trackin.MV(i).Max = 0.05;
+        app.mpc.agent(ct).data.nlobj_trackin.MV(i).Max = 0.1;
     end
     
     app.mpc.agent(ct).data.nlobj_trackin.Optimization.CustomEqConFcn = ...
