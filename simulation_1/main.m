@@ -81,29 +81,46 @@ title('Containment MPC');
 
 
 %% app.mpc settting
-mpc_initialization();
-xk = zeros(6,app.agent_num);
-uk = zeros(4,app.agent_num);
-xHistory = zeros(6,app.agent_num,50);
-uHistory = zeros(4,app.agent_num,50);
-lastMV = zeros(4,app.agent_num);
-for i = 1:app.agent_num
-   xk(:,i) = app.mpc.agent(i).data.x0;
-   uk(:,i) = app.mpc.agent(i).data.u0;
-end
-for ct = 1:50
-    for i = 1:app.agent_num
-        uk(:,i) = mpc_run(i,xk(:,i), lastMV(:,i),[0 0 0 0 0 0]);
-        predict(app.mpc.agent(i).data.EKF, uk(:,i), 0.1);
-        uHistory(:,i,ct) = uk(:,i);
-        lastMV(:,i) = uk(:,i);
-        ODEFUN = @(t,xk) FlyingRobotStateFcn(xk,uk);
-        [TOUT,YOUT] = ode45(ODEFUN,[0 0.1], xHistory(:,i,ct)');
 
-        xHistory(:,i,ct+1) = YOUT(end,:);     
-        
+mpc_initialization();
+app.history_size = 50;
+hbar = waitbar(0, 'Simulation Progress');
+for k=1:app.history_size
+    for ct = 1:app.agent_num
+        yk = app.mpc.agent(ct).data.xHistory(1:3,k)' + randn + 0.01;
+        xk = correct(app.mpc.agent(ct).data.EKF, yk);
+        [uk, options] = nlmpcmove(app.mpc.agent(ct).data.nlobj, xk, app.mpc.agent(ct).data.lastMV,app.mpc.agent(ct).data.ref',[],app.mpc.agent(ct).data.options);
+        predict(app.mpc.agent(ct).data.EKF,uk,0.4);
+        lastMV = uk;
+        ODEFUN = @(t,xk) FlyingRobotStateFcn(xk,uk);
+        [TOUT,YOUT] = ode45(ODEFUN,[0 0.4], app.mpc.agent(ct).data.xHistory(:,k)');
+        app.mpc.agent(ct).data.xHistory(:,k+1) = YOUT(end,:);
+        app.mpc.agent(ct).data.uHistory(:,k+1) = uk;
     end
+    waitbar(k/app.history_size, hbar);
 end
+close(hbar)
+
+%% plotting history
+
+figure(1);
+clf;
+legends = cell(1,app.agent_num);
+for ct = 1:app.agent_num
+    legends{ct} = num2str(ct);
+    legends{ct} = strcat("robot",legends{ct});
+    x = zeros(1, app.history_size+1);
+    y = zeros(1, app.history_size+1);
+    x(:) = app.mpc.agent(ct).data.xHistory(1,:);
+    y(:) = app.mpc.agent(ct).data.xHistory(2,:);
+    plot(x,y, '-+'); hold on;
+end
+legend(legends);
+for ct = 1:app.agent_num
+    FlyingRobotPlotTracking(app.mpc.agent(ct).data.xHistory, app.mpc.agent(ct).data.uHistory, ct);
+end
+
+
 %% Simulation
 i = 0;
 while(1)

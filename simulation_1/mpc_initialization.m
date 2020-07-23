@@ -1,11 +1,18 @@
-global app
+function mpc_initialization()
 
+global app
+app.ny = 6;
+app.nx = 6;
+app.nu = 4;
+app.Ts = 0.4;
+app.p = 30;
 for ct = 1:app.agent_num
     ny = 6;
     nx = 6;
     nu = 4;
-    Ts = 0.1;
-    p = 10;
+    Ts = 0.5;
+    p = 30;
+    
     app.mpc.agent(ct).data.ny = ny;
     app.mpc.agent(ct).data.nx = nx;
     app.mpc.agent(ct).data.nu = nu;
@@ -64,12 +71,6 @@ for ct = 1:app.agent_num
     nlobj.Optimization.ReplaceStandardCost = true;
     
     
-
-
-
-
-    
-    
     % MPC scheme cost function are described in (2a, 2b)
     
     % D-MPC scheme cost function are described in ()
@@ -79,10 +80,16 @@ for ct = 1:app.agent_num
     
     % estimator
     
-app.mpc.agent(ct).data.DStateFcn = @(xk,uk,Ts) FlyingRobotStateFcnDiscreteTime(xk,uk,Ts);
-app.mpc.agent(ct).data.DMeasFcn = @(xk) xk(1:3);
-app.mpc.agent(ct).data.EKF = extendedKalmanFilter(app.mpc.agent(ct).data.DStateFcn,app.mpc.agent(ct).data.DMeasFcn,app.mpc.agent(ct).data.x0);
-app.mpc.agent(ct).data.EKF.MeasurementNoise = 0.01;
+    app.mpc.agent(ct).data.DStateFcn = @(xk,uk,Ts) FlyingRobotStateFcnDiscreteTime(xk,uk,Ts);
+    app.mpc.agent(ct).data.DMeasFcn = @(xk) xk(1:3);
+    app.mpc.agent(ct).data.EKF = extendedKalmanFilter(app.mpc.agent(ct).data.DStateFcn,app.mpc.agent(ct).data.DMeasFcn,app.mpc.agent(ct).data.x0);
+    app.mpc.agent(ct).data.EKF.MeasurementNoise = 0.01;
+    app.mpc.agent(ct).data.xHistory = app.mpc.agent(ct).data.x0;
+    app.mpc.agent(ct).data.uHistory = [];
+    app.mpc.agent(ct).data.lastMV = zeros(nu,1);
+    app.mpc.agent(ct).data.ref = [normrnd(5,3) normrnd(0,4) normrnd(0,0.1), 0, 0, 0]';
+    app.mpc.agent(ct).data.ref = [-8 -9 0 0 0 0]';
+    app.mpc.agent(ct).data.options = nlmpcmoveopt;
 end
 
 
