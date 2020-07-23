@@ -12,7 +12,7 @@ MODE_GO_FOLLOW = 1;
 MODE_STOP_CONTAINMENT = 2;
 MODE_TARGET_SENSING = 3;
 %% init
-app.dt = 0.5;  
+app.dt = 0.5;
 app.agent_num = 8;
 app.leader_num = 4;
 app.follower_num = app.agent_num - app.leader_num;
@@ -52,7 +52,7 @@ for k = 1:app.simulation_step+2
     for ct = 1:app.agent_num
         yk = app.mpc.agent(ct).data.xHistory(k,1:3)' + randn*0.01;
         xk = correct(app.mpc.agent(ct).data.EKF, yk);
-%         [uk, app.mpc.agent(ct).data.options] = nlmpcmove(app.mpc.agent(ct).data.nlobj_tracking, xk, app.mpc.agent(ct).data.lastMV,app.mpc.agent(ct).data.Xref(k:min(k+9,app.simulation_step+2),:),[],app.mpc.agent(ct).data.options);
+        %         [uk, app.mpc.agent(ct).data.options] = nlmpcmove(app.mpc.agent(ct).data.nlobj_tracking, xk, app.mpc.agent(ct).data.lastMV,app.mpc.agent(ct).data.Xref(k:min(k+9,app.simulation_step+2),:),[],app.mpc.agent(ct).data.options);
         [uk, app.mpc.agent(ct).data.options] = nlmpcmove(app.mpc.agent(ct).data.nlobj_tracking, xk, app.mpc.agent(ct).data.lastMV,app.states_ref(:,ct)',[],app.mpc.agent(ct).data.options);
         
         predict(app.mpc.agent(ct).data.EKF ,uk ,app.mpc.agent(ct).data.Ts);
@@ -61,14 +61,15 @@ for k = 1:app.simulation_step+2
         ODEFUN = @(t,xk) FlyingRobotStateFcn(xk,uk);
         [TOUT,YOUT] = ode45(ODEFUN,[0 app.mpc.agent(ct).data.Ts], app.mpc.agent(ct).data.xHistory(k,:)');
         app.mpc.agent(ct).data.xHistory(k+1,:) = YOUT(end,:);
-    end         
+    end
+    for ct = 1:app.agent_num
+        hold on;
+        FlyingRobotPlotTracking_noinfo( app.mpc.agent(ct).data.Ts, app.mpc.agent(ct).data.p,(app.simulation_step+2),app.mpc.agent(ct).data.xHistory,app.mpc.agent(ct).data.uHistory,ct); drawnow;
+    end
     waitbar(k/(app.simulation_step+2), hbar);
 end
 close(hbar)
 %% result
-for ct = 1:app.agent_num
-    hold on;
-   FlyingRobotPlotTracking_noinfo( app.mpc.agent(ct).data.Ts, app.mpc.agent(ct).data.p,(app.simulation_step+2),app.mpc.agent(ct).data.xHistory,app.mpc.agent(ct).data.uHistory,ct); drawnow; 
-end
+
 
 

@@ -1,4 +1,4 @@
-function mpc_simulation_init(generate_trajectory)
+function mpc_containment_simulation_init(generate_trajectory)
 
 global app
 app.ny = 6;
@@ -70,7 +70,7 @@ for ct = 1:app.agent_num
     % input constraint
     for i = 1:app.nu
         app.mpc.agent(ct).data.nlobj_trackin.MV(i).Min = 0;
-        app.mpc.agent(ct).data.nlobj_trackin.MV(i).Max = 0.3;
+        app.mpc.agent(ct).data.nlobj_trackin.MV(i).Max = 0.05;
     end
     
     app.mpc.agent(ct).data.nlobj_trackin.Optimization.CustomEqConFcn = ...
