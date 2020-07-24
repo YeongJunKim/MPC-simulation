@@ -8,6 +8,8 @@ app.Ts = app.dt;
 app.p = app.simulation_step;
 app.prediction_h = 6;
 app.control_h = 4;
+app.alpha = 0.4;
+app.beta = 0.6;
 clf;
 for ct = 1:app.agent_num
     %     app.mpc.agent(ct).plot = figure();
@@ -20,6 +22,8 @@ for ct = 1:app.agent_num
     app.mpc.agent(ct).data.p =  app.p;
     app.mpc.agent(ct).prediction_h = app.prediction_h;
     app.mpc.agent(ct).control_h = app.control_h;
+    app.mpc.agent(ct).data.alpha = app.alpha;
+    app.mpc.agent(ct).data.beta = app.beta;
     
     app.mpc.agent(ct).data.nlobj = nlmpc(app.nx,app.ny,app.nu);
     app.mpc.agent(ct).data.nlobj.Model.StateFcn = "FlyingRobotStateFcn";
@@ -29,7 +33,7 @@ for ct = 1:app.agent_num
     app.mpc.agent(ct).data.nlobj.ControlHorizon = app.mpc.agent(ct).data.p;
     
     % (2a), (2b)
-    app.mpc.agent(ct).data.nlobj.Optimization.CustomCostFcn = @(X,U,e,data) (app.mpc.agent(ct).data.Ts * sum(sum(U(1:app.mpc.agent(ct).data.p,:))))^2 + (app.mpc.agent(ct).data.Ts * sum(sum(X(1:app.mpc.agent(ct).data.p,:)-data.References)))^2;
+    app.mpc.agent(ct).data.nlobj.Optimization.CustomCostFcn = @(X,U,e,data) app.mpc.agent(ct).data.alpha * ((app.mpc.agent(ct).data.Ts * sum(sum(U(1:app.mpc.agent(ct).data.p,:))))^2) + app.mpc.agent(ct).data.beta * ((app.mpc.agent(ct).data.Ts * sum(sum(X(1:app.mpc.agent(ct).data.p,:)-data.References)))^2);
     app.mpc.agent(ct).data.nlobj.Optimization.ReplaceStandardCost = true;
     % final state constraint
     app.mpc.agent(ct).data.nlobj.Optimization.CustomEqConFcn = @(X,U,data) X(end,:)';

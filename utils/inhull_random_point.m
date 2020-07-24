@@ -2,7 +2,7 @@ function r = inhull_random_point(p, n)
 % p = convex hull point;
 % n = return point number;
 r = zeros(n,1);
-p
+
 for i = 1:n
     middle = mean(p,1);
     while(1)
