@@ -1,4 +1,10 @@
 function mpc_containment_simulation_init(generate_trajectory)
+% argument
+% generate_trajectory
+% If setting 1. Then generate trajectory from app.mpc.agent(ct).data.x_ref.
+% If setting 0. Dose not generate trajectory.
+% If you want generate trajectory please consider hardware constraint.
+% dt, p, horizon_size, ...
 
 global app
 app.ny = 6;
@@ -10,11 +16,9 @@ app.prediction_h = 6;
 app.control_h = 4;
 app.alpha = 0.4;
 app.beta = 0.6;
+app.input_max = 0.1;
 clf;
 for ct = 1:app.agent_num
-    %     app.mpc.agent(ct).plot = figure();
-    %     figure(app.mpc.agent(ct).plot);
-    
     app.mpc.agent(ct).data.ny = app.ny;
     app.mpc.agent(ct).data.nx = app.nx;
     app.mpc.agent(ct).data.nu = app.nu;
@@ -24,6 +28,7 @@ for ct = 1:app.agent_num
     app.mpc.agent(ct).control_h = app.control_h;
     app.mpc.agent(ct).data.alpha = app.alpha;
     app.mpc.agent(ct).data.beta = app.beta;
+    app.mpc.agent(ct).data.input_max = app.input_max;
     
     app.mpc.agent(ct).data.nlobj = nlmpc(app.nx,app.ny,app.nu);
     app.mpc.agent(ct).data.nlobj.Model.StateFcn = "FlyingRobotStateFcn";
