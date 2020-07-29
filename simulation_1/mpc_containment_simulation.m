@@ -202,7 +202,7 @@ for k = 1:app.simulation_step+2
             p(j,:) =app.states(1:2,j);
         end
         for i = 1:app.follower_num
-            app.states_target(1:2,app.leader_num+i) = inhull_random_point(p,1);
+             app.states_target(1:2,app.leader_num+i) = inhull_random_point(p,1);
         end
     elseif(app.mode == MODE_GO_FOLLOW)
         p = zeros(app.leader_num,2);
@@ -210,7 +210,7 @@ for k = 1:app.simulation_step+2
             p(j,:) = app.states_ref(1:2,j);
         end
         for j = 1:app.follower_num
-            app.states_target(1:2,app.leader_num+j) = inhull_random_point(p,1);
+%             app.states_target(1:2,app.leader_num+j) = inhull_random_point(p,1);
         end
         
     end
@@ -251,6 +251,7 @@ for k = 1:app.simulation_step+2
         yk = app.mpc.agent(ct).data.xHistory(k,1:3)' + randn*0.01;
         xk = correct(app.mpc.agent(ct).data.EKF, yk);
         %         [uk, app.mpc.agent(ct).data.options] = nlmpcmove(app.mpc.agent(ct).data.nlobj_tracking, xk, app.mpc.agent(ct).data.lastMV,app.mpc.agent(ct).data.Xref(k:min(k+9,app.simulation_step+2),:),[],app.mpc.agent(ct).data.options);
+       
         [uk, app.mpc.agent(ct).data.options] = nlmpcmove(app.mpc.agent(ct).data.nlobj_tracking, xk, app.mpc.agent(ct).data.lastMV,app.states_target(:,ct)',[],app.mpc.agent(ct).data.options);
         
         predict(app.mpc.agent(ct).data.EKF ,uk ,app.mpc.agent(ct).data.Ts);
@@ -258,7 +259,16 @@ for k = 1:app.simulation_step+2
         app.mpc.agent(ct).data.lastMV = uk;
         ODEFUN = @(t,xk) FlyingRobotStateFcn(xk,uk);
         [TOUT,YOUT] = ode45(ODEFUN,[0 app.mpc.agent(ct).data.Ts], app.mpc.agent(ct).data.xHistory(k,:)');
-        app.mpc.agent(ct).data.xHistory(k+1,:) = YOUT(end,:);
+        if(app.mode == MODE_STOP_CONTAINMENT)
+           if ct <= app.leader_num && k > 1
+              app.mpc.agent(ct).data.xHistory(k+1,:) = app.mpc.agent(ct).data.xHistory(k,:); 
+           else
+              app.mpc.agent(ct).data.xHistory(k+1,:) = YOUT(end,:);
+           end
+        else
+            
+              app.mpc.agent(ct).data.xHistory(k+1,:) = YOUT(end,:);
+        end
         app.states(:,ct) = YOUT(end,:);
     end
     
@@ -287,13 +297,14 @@ for k = 1:app.simulation_step+2
             app.plot_t{i}.YData = app.states_ref(2,i);
         end
         fprintf("app.mode exchanged : SENSING END\n");
+        app.mode = MODE_TARGET_SENSING;
     end
 %     waitbar(k/(app.simulation_step+2), hbar);
     if(MAKE_VIDEO == 1)
         F(k) = getframe(gcf);
     end
 end
-close(hbar)
+% close(hbar)
 %% plot history
 for ct = 1:app.agent_num
     hold on;
