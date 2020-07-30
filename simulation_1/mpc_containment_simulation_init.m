@@ -12,11 +12,11 @@ app.nx = 6;
 app.nu = 4;
 app.Ts = app.dt;
 app.p = app.simulation_step;
-app.prediction_h = 5;
+app.prediction_h = 8;
 app.control_h = 100;
 app.alpha = 0.4;
 app.beta = 0.6;
-app.input_max = 0.1;
+app.input_max = 5;
 clf;
 for ct = 1:app.agent_num
     app.mpc.agent(ct).data.ny = app.ny;
@@ -79,11 +79,11 @@ for ct = 1:app.agent_num
     % input constraint
     for i = 1:app.nu
         app.mpc.agent(ct).data.nlobj_tracking.MV(i).Min = -1;
-        app.mpc.agent(ct).data.nlobj_tracking.MV(i).Max = 3;
+        app.mpc.agent(ct).data.nlobj_tracking.MV(i).Max = 4;
     end
-    
-    app.mpc.agent(ct).data.nlobj_tracking.Optimization.CustomEqConFcn = ...
-        @(X,U,data) [U(1:end-1,1).*U(1:end-1,2); U(1:end-1,3).*U(1:end-1,4)];
+    app.mpc.agent(ct).data.nlobj_tracking.Optimization.CustomEqConFcn = @custom_eq_constraint;
+%     app.mpc.agent(ct).data.nlobj_tracking.Optimization.CustomEqConFcn = ...
+%         @(X,U,data) [U(1:end-1,1).*U(1:end-1,2); U(1:end-1,3).*U(1:end-1,4)];
     
     validateFcns(app.mpc.agent(ct).data.nlobj_tracking,app.mpc.agent(ct).data.x0,app.mpc.agent(ct).data.u0);
     

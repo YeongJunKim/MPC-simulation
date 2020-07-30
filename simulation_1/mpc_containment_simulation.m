@@ -38,9 +38,9 @@ app.initial_states(:,8) = [-2 -8 pi/2 0 0 0]';
 
 app.states_ref = zeros(6, app.agent_num);
 app.states_ref(:,1) = [0.0 0.0 pi 0 0 0]';
-app.states_ref(:,2) = [5.0 0.0 pi/2 0 0 0]';
-app.states_ref(:,3) = [5.0 5.0 0 0 0 0]';
-app.states_ref(:,4) = [0 7.0 pi/3 0 0 0]';
+app.states_ref(:,2) = [10.0 0.0 pi/2 0 0 0]';
+app.states_ref(:,3) = [10.0 10.0 0 0 0 0]';
+app.states_ref(:,4) = [0 10.0 pi/3 0 0 0]';
 app.states_ref(:,5) = [2 1.5 0 0 0 0]';
 app.states_ref(:,6) = [0.5 -1.5 0 0 0 0]';
 app.states_ref(:,7) = [-1 5 0 0 0 0]';
@@ -69,9 +69,9 @@ for i = 1:app.follower_num
 end
 
 app.states_ref_arr(1:2,1,3) = [-10 -10];
-app.states_ref_arr(1:2,2,3) = [3 -10];
-app.states_ref_arr(1:2,3,3) = [3 3];
-app.states_ref_arr(1:2,4,3) = [-10 3];
+app.states_ref_arr(1:2,2,3) = [13 -10];
+app.states_ref_arr(1:2,3,3) = [13 13];
+app.states_ref_arr(1:2,4,3) = [-10 13];
 p = zeros(app.leader_num,2);
 for j = 1:app.leader_num
     p(j,:) =app.states_ref_arr(1:2,j,3);
@@ -127,7 +127,7 @@ end
 [k, av] = convhull(p);
 app.convex_hull = plot(ax, p(k,1),p(k,2));
 
-xlim([-13.0 11.0]); ylim([-13.0 11.0]);
+xlim([-20.0 20.0]); ylim([-20.0 20.0]);
 xlabel('X (m)'); ylabel('Y (m)');
 legend([app.plot_p{1}  app.plot_p{app.leader_num + 1} app.plot_t{1} app.plot_ft{1}], {'Leaders', 'Follower', 'Leaders target', 'Followers target'});
 title('Containment MPC');
@@ -235,7 +235,7 @@ for k = 1:app.simulation_step+2
        % ...(4)
        max = 0;
        min(1,1) = 10000;
-       for ag = 1:app.agent_num
+       for ag = 1:app.leader_num
            diff = norm(abs(app.states(1:2,ag) - app.states_target(1:2,ag)))/app.mpc.agent(ct).data.input_max;
 %              diff = norm(abs(app.states(1:2,ag) - app.states_target(1:2,ag)))/app.mpc.agent(ct).data.input_max; 
              if diff >= max
@@ -244,15 +244,17 @@ for k = 1:app.simulation_step+2
              if diff <= min
                 min = diff; 
              end
-       end
-       for ag = 1:app.leader_num
-%         app.mpc.agent(ag).data.nlobj_tracking.ControlHorizon = round(max);
+            app.mpc.agent(ag).data.nlobj_tracking.PredictionHorizon = round(max)+8;
+            app.mpc.agent(ag).data.nlobj_tracking.ControlHorizon = round(max)+8;
        end
     else
         for ag = 1:app.leader_num
-%            app.mpc.agent(ag).data.nlobj_tracking.ControlHorizon = app.control_h; 
+           app.mpc.agent(ag).data.nlobj_tracking.PredictionHorizon = 8; 
+        app.mpc.agent(ag).data.nlobj_tracking.ControlHorizon = 8;
         end
     end
+    fprintf("PredictionHorizon : %d \n", app.mpc.agent(1).data.nlobj_tracking.PredictionHorizon);
+    fprintf("ControlHorizon : %d\n", app.mpc.agent(1).data.nlobj_tracking.ControlHorizon);
     
     
     for ct = 1:app.agent_num
