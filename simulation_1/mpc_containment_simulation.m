@@ -245,7 +245,15 @@ for k = 1:app.simulation_step+2
                 min = diff; 
              end
        end
+       for ag = 1:app.leader_num
+%         app.mpc.agent(ag).data.nlobj_tracking.ControlHorizon = round(max);
+       end
+    else
+        for ag = 1:app.leader_num
+%            app.mpc.agent(ag).data.nlobj_tracking.ControlHorizon = app.control_h; 
+        end
     end
+    
     
     for ct = 1:app.agent_num
         yk = app.mpc.agent(ct).data.xHistory(k,1:3)' + randn*0.01;
