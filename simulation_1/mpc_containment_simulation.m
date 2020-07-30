@@ -56,9 +56,9 @@ end
 app.states_ref_arr = zeros(6, app.agent_num, 3);
 app.states_ref_arr(:,:,1) = app.states_ref(:,:);
 
-app.states_ref_arr(1:2,1,2) = [-3 -3];
-app.states_ref_arr(1:2,2,2) = [2 -3];
-app.states_ref_arr(1:2,3,2) = [2 2];
+app.states_ref_arr(1:2,1,2) = [-5 -5];
+app.states_ref_arr(1:2,2,2) = [10 -3];
+app.states_ref_arr(1:2,3,2) = [5 5];
 app.states_ref_arr(1:2,4,2) = [-3 9];
 p = zeros(app.leader_num,2);
 for j = 1:app.leader_num
@@ -202,7 +202,7 @@ for k = 1:app.simulation_step+2
             p(j,:) =app.states(1:2,j);
         end
         for i = 1:app.follower_num
-             app.states_target(1:2,app.leader_num+i) = inhull_random_point(p,1);
+            app.states_target(1:2,app.leader_num+i) = inhull_random_point(p,1);
         end
     elseif(app.mode == MODE_GO_FOLLOW)
         p = zeros(app.leader_num,2);
@@ -210,7 +210,7 @@ for k = 1:app.simulation_step+2
             p(j,:) = app.states_ref(1:2,j);
         end
         for j = 1:app.follower_num
-%             app.states_target(1:2,app.leader_num+j) = inhull_random_point(p,1);
+            %             app.states_target(1:2,app.leader_num+j) = inhull_random_point(p,1);
         end
         
     end
@@ -232,25 +232,31 @@ for k = 1:app.simulation_step+2
     
     
     if(app.mode == MODE_GO_FOLLOW)
-       % ...(4)
-       max = 0;
-       min(1,1) = 10000;
-       for ag = 1:app.leader_num
-           diff = norm(abs(app.states(1:2,ag) - app.states_target(1:2,ag)))/app.mpc.agent(ct).data.input_max;
-%              diff = norm(abs(app.states(1:2,ag) - app.states_target(1:2,ag)))/app.mpc.agent(ct).data.input_max; 
-             if diff >= max
-                 max = diff;
-             end
-             if diff <= min
-                min = diff; 
-             end
+        % ...(4)
+        max = 0;
+        min(1,1) = 10000;
+        for ag = 1:app.leader_num
+            diff = norm(abs(app.states(1:2,ag) - app.states_target(1:2,ag)))/app.mpc.agent(ct).data.input_max;
+            %              diff = norm(abs(app.states(1:2,ag) - app.states_target(1:2,ag)))/app.mpc.agent(ct).data.input_max;
+            if diff >= max
+                max = diff;
+            end
+            if diff <= min
+                min = diff;
+            end
             app.mpc.agent(ag).data.nlobj_tracking.PredictionHorizon = round(max)+8;
             app.mpc.agent(ag).data.nlobj_tracking.ControlHorizon = round(max)+8;
-       end
+        end
+        for ag = 1:app.follower_num
+           app.mpc.agent(app.leader_num+ag).data.nlobj_tracking.Optimization.CustomEqConFcn = @custom_eq_constraint_non; 
+        end
     else
         for ag = 1:app.leader_num
-           app.mpc.agent(ag).data.nlobj_tracking.PredictionHorizon = 8; 
-        app.mpc.agent(ag).data.nlobj_tracking.ControlHorizon = 8;
+            app.mpc.agent(ag).data.nlobj_tracking.PredictionHorizon = 8;
+            app.mpc.agent(ag).data.nlobj_tracking.ControlHorizon = 8;
+        end
+        for ag = 1:app.follower_num
+           app.mpc.agent(app.leader_num+ag).data.nlobj_tracking.Optimization.CustomEqConFcn = @custom_eq_constraint; 
         end
     end
     fprintf("PredictionHorizon : %d \n", app.mpc.agent(1).data.nlobj_tracking.PredictionHorizon);
@@ -261,7 +267,7 @@ for k = 1:app.simulation_step+2
         yk = app.mpc.agent(ct).data.xHistory(k,1:3)' + randn*0.01;
         xk = correct(app.mpc.agent(ct).data.EKF, yk);
         %         [uk, app.mpc.agent(ct).data.options] = nlmpcmove(app.mpc.agent(ct).data.nlobj_tracking, xk, app.mpc.agent(ct).data.lastMV,app.mpc.agent(ct).data.Xref(k:min(k+9,app.simulation_step+2),:),[],app.mpc.agent(ct).data.options);
-       
+        
         [uk, app.mpc.agent(ct).data.options] = nlmpcmove(app.mpc.agent(ct).data.nlobj_tracking, xk, app.mpc.agent(ct).data.lastMV,app.states_target(:,ct)',[],app.mpc.agent(ct).data.options);
         
         predict(app.mpc.agent(ct).data.EKF ,uk ,app.mpc.agent(ct).data.Ts);
@@ -270,14 +276,14 @@ for k = 1:app.simulation_step+2
         ODEFUN = @(t,xk) FlyingRobotStateFcn(xk,uk);
         [TOUT,YOUT] = ode45(ODEFUN,[0 app.mpc.agent(ct).data.Ts], app.mpc.agent(ct).data.xHistory(k,:)');
         if(app.mode == MODE_STOP_CONTAINMENT)
-           if ct <= app.leader_num && k > 1
-              app.mpc.agent(ct).data.xHistory(k+1,:) = app.mpc.agent(ct).data.xHistory(k,:); 
-           else
-              app.mpc.agent(ct).data.xHistory(k+1,:) = YOUT(end,:);
-           end
+            if ct <= app.leader_num && k > 1
+                app.mpc.agent(ct).data.xHistory(k+1,:) = app.mpc.agent(ct).data.xHistory(k,:);
+            else
+                app.mpc.agent(ct).data.xHistory(k+1,:) = YOUT(end,:);
+            end
         else
             
-              app.mpc.agent(ct).data.xHistory(k+1,:) = YOUT(end,:);
+            app.mpc.agent(ct).data.xHistory(k+1,:) = YOUT(end,:);
         end
         app.states(:,ct) = YOUT(end,:);
     end
@@ -309,7 +315,7 @@ for k = 1:app.simulation_step+2
         fprintf("app.mode exchanged : SENSING END\n");
         app.mode = MODE_TARGET_SENSING;
     end
-%     waitbar(k/(app.simulation_step+2), hbar);
+    %     waitbar(k/(app.simulation_step+2), hbar);
     if(MAKE_VIDEO == 1)
         F(k) = getframe(gcf);
     end
@@ -335,21 +341,21 @@ end
 function plot_update()
 global app
 % Update plot
-    for j = 1:app.agent_num
-        app.plot_p{j}.XData = app.states(1,j);
-        app.plot_p{j}.YData = app.states(2,j);
-    end
-    for j = 1:app.follower_num
-        app.plot_ft{j}.XData = app.states_target(1,app.leader_num+j);
-        app.plot_ft{j}.YData = app.states_target(2,app.leader_num+j);
-    end
-    % draw convel hull
-    p = zeros(app.leader_num,2);
-    for j = 1:app.leader_num
-        p(j,:) =app.states(1:2,j);
-    end
-    [kk, av] = convhull(p);
-    app.convex_hull.XData = p(kk,1); app.convex_hull.YData = p(kk,2);
-    drawnow;
+for j = 1:app.agent_num
+    app.plot_p{j}.XData = app.states(1,j);
+    app.plot_p{j}.YData = app.states(2,j);
+end
+for j = 1:app.follower_num
+    app.plot_ft{j}.XData = app.states_target(1,app.leader_num+j);
+    app.plot_ft{j}.YData = app.states_target(2,app.leader_num+j);
+end
+% draw convel hull
+p = zeros(app.leader_num,2);
+for j = 1:app.leader_num
+    p(j,:) =app.states(1:2,j);
+end
+[kk, av] = convhull(p);
+app.convex_hull.XData = p(kk,1); app.convex_hull.YData = p(kk,2);
+drawnow;
 end
 
