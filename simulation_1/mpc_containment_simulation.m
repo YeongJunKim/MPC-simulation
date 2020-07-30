@@ -13,7 +13,7 @@ clf
 clc
 
 % Generating Video flag
-MAKE_VIDEO = 1;
+MAKE_VIDEO = 0;
 
 global app
 MODE_GO_FOLLOW          = 1;
