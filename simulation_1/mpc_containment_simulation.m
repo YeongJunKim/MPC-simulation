@@ -13,7 +13,7 @@ clf
 clc
 
 % Generating Video flag
-MAKE_VIDEO = 0;
+MAKE_VIDEO = 1;
 
 global app
 MODE_GO_FOLLOW          = 1;
@@ -248,7 +248,7 @@ for k = 1:app.simulation_step+2
             app.mpc.agent(ag).data.nlobj_tracking.ControlHorizon = round(max)+8;
         end
         for ag = 1:app.follower_num
-           app.mpc.agent(app.leader_num+ag).data.nlobj_tracking.Optimization.CustomEqConFcn = @custom_eq_constraint_non; 
+            app.mpc.agent(app.leader_num+ag).data.nlobj_tracking.Optimization.CustomEqConFcn = @custom_eq_constraint_non;
         end
     else
         for ag = 1:app.leader_num
@@ -256,7 +256,7 @@ for k = 1:app.simulation_step+2
             app.mpc.agent(ag).data.nlobj_tracking.ControlHorizon = 8;
         end
         for ag = 1:app.follower_num
-           app.mpc.agent(app.leader_num+ag).data.nlobj_tracking.Optimization.CustomEqConFcn = @custom_eq_constraint; 
+            app.mpc.agent(app.leader_num+ag).data.nlobj_tracking.Optimization.CustomEqConFcn = @custom_eq_constraint;
         end
     end
     fprintf("PredictionHorizon : %d \n", app.mpc.agent(1).data.nlobj_tracking.PredictionHorizon);
@@ -322,9 +322,11 @@ for k = 1:app.simulation_step+2
 end
 % close(hbar)
 %% plot history
-for ct = 1:app.agent_num
-    hold on;
-    FlyingRobotPlotTracking_noinfo( app.mpc.agent(ct).data.Ts, app.mpc.agent(ct).data.p,(app.simulation_step+2),app.mpc.agent(ct).data.xHistory,app.mpc.agent(ct).data.uHistory,ct); drawnow;
+if MAKE_VIDEO ~=1
+    for ct = 1:app.agent_num
+        hold on;
+        FlyingRobotPlotTracking_noinfo( app.mpc.agent(ct).data.Ts, app.mpc.agent(ct).data.p,(app.simulation_step+2),app.mpc.agent(ct).data.xHistory,app.mpc.agent(ct).data.uHistory,ct); drawnow;
+    end
 end
 %% result
 if (MAKE_VIDEO == 1)
