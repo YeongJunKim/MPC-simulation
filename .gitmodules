@@ -1,0 +1,6 @@
+[submodule "do-mpc"]
+	path = do-mpc
+	url = https://github.com/YeongJunKim/do-mpc
+[submodule "pyMPC"]
+	path = pyMPC
+	url = https://github.com/YeongJunKim/pyMPC
