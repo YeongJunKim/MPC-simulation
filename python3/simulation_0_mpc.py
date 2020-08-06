@@ -1,3 +1,9 @@
+# paper:
+# author: Yeong Jun Kim(colson)
+# email: colson@korea.ac.kr || dud3722000@naver.com
+# date: 2020-08-06
+# Utilezed code: https://www.github.com/YeongJunKim/do-mpc
+
 import numpy as np
 from casadi import *
 from casadi.tools import *
