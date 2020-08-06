@@ -43,6 +43,7 @@ mpc.set_initial_guess()
 fig, ax, graphics = do_mpc.graphics.default_plot(mpc.data)
 plt.ion()
 
+
 iteration = 40
 for k in range(iteration):
     u0 = mpc.make_step(x0)
@@ -57,8 +58,22 @@ for k in range(iteration):
     graphics.reset_axes()
     plt.show()
 
-u = mpc.data._x
-x_axis = u[:,0]
-y_axis = u[:,1]
+x = mpc.data._x
+x_axis = x[:,0]
+y_axis = x[:,1]
 plt.plot(x_axis,y_axis)
+plt.xlabel('x_axis')
+plt.ylabel('y_axis')
+plt.title('Trajectory')
 plt.show()
+
+fig2, ax2 = plt.subplots(3, sharex=True, figsize=(16,9))
+ax2[0].plot(x[:,0])
+ax2[1].plot(x[:,1])
+ax2[2].plot(x[:,2])
+ax2[0].set_xlabel('iteration')
+ax2[1].set_xlabel('iteration')
+ax2[2].set_xlabel('iteration')
+ax2[0].set_ylabel('x_position')
+ax2[1].set_ylabel('y_position')
+ax2[2].set_ylabel('heading angle')
