@@ -19,9 +19,9 @@ setup_mpc = {
 }
 ```
 #### Simulation Result
-* 1
+* 1. Trajectory
 ![trajectory](./trajectory.png)
-* 2
+* 2. Iteration
 ![iteration](./iteration.png)
-* 3
+* 3. In horizon estimation
 ![in_horizon](./in_horizon.png)
