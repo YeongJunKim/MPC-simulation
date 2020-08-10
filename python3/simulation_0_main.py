@@ -21,9 +21,10 @@ from simulation_0_model import simulation_0_model
 from simulation_0_mpc import simulation_0_mpc
 from simulation_0_simulator import simulation_0_simulator
 
+
 dt = 1
 init = [0, 0, 0]
-target = [3, 1, 0]
+target = [15, 1, 0]
 _u_con = [0.2, 2.0]
 model = simulation_0_model(dt, target)
 mpc = simulation_0_mpc(model, dt, _u_con)
@@ -44,7 +45,7 @@ fig, ax, graphics = do_mpc.graphics.default_plot(mpc.data)
 plt.ion()
 
 
-iteration = 40
+iteration = 150
 for k in range(iteration):
     u0 = mpc.make_step(x0)
     y_next = simulator.make_step(u0)
@@ -57,6 +58,7 @@ for k in range(iteration):
     graphics.plot_predictions(t_ind=k)
     graphics.reset_axes()
     plt.show()
+    plt.pause(0.1)
 
 x = mpc.data._x
 x_axis = x[:,0]
@@ -67,7 +69,7 @@ plt.ylabel('y_axis')
 plt.title('Trajectory')
 plt.show()
 
-fig2, ax2 = plt.subplots(3, sharex=True, figsize=(16,9))
+fig2, ax2 = plt.subplots(3, sharex=True, figsize=(9,9))
 ax2[0].plot(x[:,0])
 ax2[1].plot(x[:,1])
 ax2[2].plot(x[:,2])
