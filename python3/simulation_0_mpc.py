@@ -23,7 +23,7 @@ def simulation_0_mpc(model, dt , _u_con):
     mpc = do_mpc.controller.MPC(model)
 
     setup_mpc = {
-        'n_horizon': 10,
+        'n_horizon': 20,
         'n_robust': 1,
         'open_loop': 0,
         't_step': dt,
