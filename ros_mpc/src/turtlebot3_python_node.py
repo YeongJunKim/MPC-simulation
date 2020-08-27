@@ -3,7 +3,7 @@ import rospy
 import std_msgs
 import sensor_msgs
 import geometry_msgs
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Vector3
 from nav_msgs.msg import Odometry
 # from tf.transformations import euler_from_quaternion
 
@@ -51,23 +51,27 @@ class MPC_controller:
         self.iteration = 0
         self.dt = 1
         self.init = [0, 0, 0]
-        self.target = [0, 0, 0]
+        self.target = [1, 2, 0]
         self._u_con = [0.2, 2.0]
         
         self.isInit = 0
 
+        self.x = 0
+        self.y = 0
+        self.theta = 0
+
+        self.sub_odom = rospy.Subscriber("/odom", Odometry, self.odom_callback)
+        self.sub_target = rospy.Subscriber("/target", Vector3, self.target_change_callback)
+        self.pub_control = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
+
+        self.mpcinit()
+    
+    def mpcinit(self):
         self.model = simulation_0_model(self.dt, self.target)
         self.mpc = simulation_0_mpc(self.model, self.dt, self._u_con)
         self.simulator = simulation_0_simulator(self.model, self.dt)
         self.estimator = do_mpc.estimator.StateFeedback(self.model)
 
-
-        self.sub_odom = rospy.Subscriber("/odom", Odometry, self.odom_callback)
-        self.pub_control = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
-
-        self.x = 0
-        self.y = 0
-        self.theta = 0
         print('MPC_controller init')
 
     def printStatus(self):
@@ -85,8 +89,8 @@ class MPC_controller:
             self.mpc.set_initial_guess()
             u0 = self.mpc.make_step(x0)
             pub_msg = Twist()
-            pub_msg.linear.x = u0[0]
-            pub_msg.angular.z = u0[1]
+            pub_msg.linear.x = u0[0] * 1.5
+            pub_msg.angular.z = u0[1] * 1.5
             self.pub_control.publish(pub_msg)
             print('u0[0] is: ', u0[0])
             print('u0[1] is: ', u0[1])
@@ -96,7 +100,11 @@ class MPC_controller:
             
         else:
             self.iteration = self.iteration
-
+    
+    def target_change_callback(self, msg):
+        self.target = [msg.x, msg.y, msg.z]
+        self.mpcinit()
+        
     def odom_callback(self, msg):
         self.isInit = 1
         self.x = msg.pose.pose.position.x
